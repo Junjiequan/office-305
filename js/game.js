@@ -74,8 +74,8 @@ export class GameScene extends Phaser.Scene {
     this.items = []; this.chairs = []; this.coffee = [];
     for (const p of this.L.props) {
       const key = 'prop_' + p.t, info = this.sheets[key]; if (!info) continue; const cx = (p.x + p.w / 2) * TW, cy = (p.y + p.h / 2) * TH, bottom = cy + p.h * TH / 2;
-      if (!p.chair && !['whiteboard'].includes(p.t) && p.t !== 'bench') this.add.image(cx, cy + 2, 'shadow').setScale(p.w * TW * 0.95 / 64, p.h * TH * 0.95 / 32 * 0.5 + 0.12).setAlpha(0.9).setDepth(1);
-      const s = this.add.sprite(cx, cy, key, 0).setOrigin(0.5, info.originY).setScale(PS * PPM * info.view / 128).setDepth(p.chair ? cy + 6 : p.t === 'whiteboard' ? cy - 6 : bottom); p.spr = s; p.cx = cx; p.cy = cy;
+      if (!p.chair && !['whiteboard', 'tv'].includes(p.t) && p.t !== 'bench') this.add.image(cx, cy + 2, 'shadow').setScale(p.w * TW * 0.95 / 64, p.h * TH * 0.95 / 32 * 0.5 + 0.12).setAlpha(0.9).setDepth(1);
+      const s = this.add.sprite(cx, cy, key, 0).setOrigin(0.5, info.originY).setScale(PS * PPM * info.view / 128).setDepth(p.chair ? cy + 6 : p.t === 'whiteboard' || p.t === 'tv' ? cy - 6 : bottom); p.spr = s; p.cx = cx; p.cy = cy;
       if (p.chair) this.chairs.push(p); if (p.label === 'coffee') this.coffee.push(p);
     }
     for (const s of this.L.stairs) { const spr = this.add.image((s.x + 1) * TW, (s.y + 1) * TH, s.up ? 'stairs_up' : 'stairs_down').setScale(0.7).setDepth((s.y + 2) * TH); s.cx = (s.x + 1) * TW; s.cy = (s.y + 1) * TH; s.spr = spr; }

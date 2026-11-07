@@ -70,7 +70,7 @@ export function buildFloor(floor) {
     } else if (r.kind === 'meeting' || r.kind === 'small') {
       const segs = Math.max(1, Math.min(4, Math.floor((r.w - 2) / 2))), tx = left + Math.floor((r.w - segs * 2) / 2), row = midRow(r);
       for (let s = 0; s < segs; s++) { put('table', tx + s * 2, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + s * 2 + dx + 0.5, row - 0.35, 0, true); chair(tx + s * 2 + dx + 0.5, row + 1.35, 4, true); } }
-      put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
+      if (r.w >= 6) { put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('tv', right - 3, far, 2, 1, { solid: false }); } else put('tv', left, far, 2, 1, { solid: false }); if (r.w >= 6) put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
     } else if (r.kind === 'kitchen') {
       const ft = far; put('fridge', left, ft, 1, 1); put('coffee', left + 1, ft, 2, 1, { label: 'coffee' }); put('counter', left + 3, ft, 2, 1); put('counter', left + 5, ft, 2, 1); put('cooler', left + 8, ft, 1, 1); put('plant_big', right - 1, ft, 1, 1);
       const row = midRow(r); for (let k = 0; k < 2; k++) { const tx = left + 3 + k * 5; put('table', tx, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + dx + 0.5, row - 0.35, 0, true); chair(tx + dx + 0.5, row + 1.35, 4, true); } }
