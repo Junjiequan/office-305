@@ -151,12 +151,12 @@ export class GameScene extends Phaser.Scene {
     this.syncPlayer(); this.animPlayer();
     const sx = Math.floor(p.x / TW), sy = Math.floor(p.y / TH), L = this.L; for (let dy = -7; dy <= 7; dy++) for (let dx = -11; dx <= 11; dx++) { if (dx * dx / 121 + dy * dy / 49 > 1) continue; const x = sx + dx, y = sy + dy; if (x >= 0 && y >= 0 && x < L.W && y < L.H) this.explored[y * L.W + x] = 1; }
   }
-  syncPlayer() { const p = this.p, seat = this.sit ? this.sit.chair : null; p.spr.setPosition(p.x, p.y + (seat ? 8 : 0)).setDepth(seat ? seat.cy + 14 + (seat.dir === 4 ? 34 : 0) : p.y); p.sh.setPosition(p.x, p.y).setDepth(seat ? seat.cy + 3 : p.y - 1); this.playerLight.x = p.x; this.playerLight.y = p.y - 34; this.camTarget.setPosition(p.x, p.y - 34); }
+  syncPlayer() { const p = this.p, seat = this.sit ? this.sit.chair : null; p.spr.setPosition(p.x, p.y + (seat ? 8 : 0)).setDepth(seat ? seat.cy + SEAT_POSE[seat.dir].depth : p.y); p.sh.setPosition(p.x, p.y).setDepth(seat ? seat.cy + 3 : p.y - 1); this.playerLight.x = p.x; this.playerLight.y = p.y - 34; this.camTarget.setPosition(p.x, p.y - 34); }
   animPlayer() { const p = this.p; if (this.sit) { if (this.sit.leaving) return; p.spr.setOrigin(0.5, this.sheets.npc_you_sit.originY); const k = `${p.prefix}_${this.time.now - this.sit.t0 > 800 ? 'sit' : 'sitdown'}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== k) p.spr.play(k); return; } p.spr.setOrigin(0.5, this.sheets.npc_you_idle.originY); const a = p.moving ? 'move' : 'idle'; const key = `${p.prefix}_${a}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== key) p.spr.play(key); p.spr.anims.timeScale = this.keys.SHIFT.isDown && p.moving ? 1.5 : 1; }
   updateNpcs(dt) {
     const p = this.p;
     for (const n of this.npcs) {
-      if (n.sitting) { n.spr.setPosition(n.x, n.y + 8).setDepth(n.seatY + 14); n.sh.setPosition(n.x, n.y).setDepth(n.seatY + 3); continue; }
+      if (n.sitting) { n.spr.setPosition(n.x, n.y + 8).setDepth(n.seatY + SEAT_POSE[n.dir].depth); n.sh.setPosition(n.x, n.y).setDepth(n.seatY + 3); continue; }
       const dx = p.x - n.x, dy = (p.y - n.y) / K, d = Math.hypot(dx, dy);
       if (n.route && n.wait <= 0) { const t = n.route[n.ri || 0], tx = t[0] - n.x, ty = (t[1] - n.y) / K, td = Math.hypot(tx, ty); if (td < 8) { n.ri = ((n.ri || 0) + 1) % n.route.length; n.wait = 3 + Math.random() * 3; } else { n.dir = dirOf(tx, ty * K); this.moveEntity(n, tx / td * 1.4 * PPM * dt, ty / td * 1.4 * PPM * dt * K); if (n.anim !== 'move') this.setAnim(n, 'move', true); else this.setAnim(n, 'move'); } }
       else { n.wait -= dt; if (n.anim !== 'idle' || n.spr.anims.currentAnim.key !== `${n.prefix}_idle_${n.dir}`) { if (d < 170 && !n.route) n.dir = dirOf(dx, dy * K); this.setAnim(n, 'idle', n.anim !== 'idle'); } else if (d < 170 && !n.route) { const nd = dirOf(dx, dy * K); if (nd !== n.dir) { n.dir = nd; this.setAnim(n, 'idle', true); } } }
