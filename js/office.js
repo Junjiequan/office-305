@@ -38,7 +38,7 @@ export function buildFloor(floor) {
   const sets = floor === 0 ? [[NORTH0, R.n0, R.n1, false], [SOUTH0, R.s0, R.s1, true]] : [[NORTH1, R.n0, R.n1, false], [SOUTH1, R.s0, R.s1, true]];
   for (const [list, r0, r1, south] of sets) for (const [x0m, x1m, id, name, kind, n, accent] of list) {
     const c0 = ox + cx(x0m), c1 = ox + cx(x1m), rx = c0 + 1, ry = oy + r0, rw = c1 - c0 - 1, rh = r1 - r0 + 1, t = accent ? TINTS.indexOf(accent) : 0;
-    fill(rx, ry, rw, rh, KIND_ZONE[kind], t); const dx = rw >= 5 ? c0 + 2 : c0 + 1, doorRow = oy + (south ? R.wc2 : R.wc1); fill(dx, doorRow, 2, 1, 'corridor');
+    fill(rx, ry, rw, rh, KIND_ZONE[kind], t); const dx = kind === 'kitchen' ? rx + Math.floor((rw - 2) / 2) : rw >= 5 ? c0 + 2 : c0 + 1, doorRow = oy + (south ? R.wc2 : R.wc1); fill(dx, doorRow, 2, 1, 'corridor');
     const accRow = south ? doorRow : oy + r0 - 1; if (accent) for (let x = rx; x < rx + rw; x++) wallTint[I(x, accRow)] = t;
     rooms.push({ id, name, kind, floor, x: rx, y: ry, w: rw, h: rh, south, door: dx, n: n || 0, accent });
     signs.push({ text: /^\d/.test(id) && !name.includes(id) ? `${id} · ${name}` : name, x: dx + 1, y: doorRow, south });
@@ -70,11 +70,11 @@ export function buildFloor(floor) {
     } else if (r.kind === 'meeting' || r.kind === 'small') {
       const segs = Math.max(1, Math.min(4, Math.floor((r.w - 2) / 2))), tx = left + Math.floor((r.w - segs * 2) / 2), row = midRow(r);
       for (let s = 0; s < segs; s++) { put('table', tx + s * 2, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + s * 2 + dx + 0.5, row - 0.35, 0, true); chair(tx + s * 2 + dx + 0.5, row + 1.35, 4, true); } }
-      if (r.w >= 6) { put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('tv', right - 3, far, 2, 1, { solid: false }); } else put('tv', left, far, 2, 1, { solid: false }); if (r.w >= 6) put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
-    } else if (r.kind === 'kitchen') {
-      const ft = far; put('fridge', left, ft, 1, 1); put('coffee', left + 1, ft, 2, 1, { label: 'coffee' }); put('counter', left + 3, ft, 2, 1); put('counter', left + 5, ft, 2, 1); put('cooler', left + 8, ft, 1, 1); put('plant_big', right - 1, ft, 1, 1);
-      const row = midRow(r); for (let k = 0; k < 2; k++) { const tx = left + 3 + k * 5; put('table', tx, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + dx + 0.5, row - 0.35, 0, true); chair(tx + dx + 0.5, row + 1.35, 4, true); } }
-      put('sofa', left + 6, near, 2, 1); put('plant', right - 1, far === near ? near : near, 1, 1);
+      if (r.w >= 5) put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('tv_w', right - 1, midRow(r), 1, 2, { solid: false }); if (r.w >= 6) put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
+    } else if (r.kind === 'kitchen') { // appliances along the right of the far wall; tables, sofas and plants on the left; the door is in the middle and the stairs sit left of it
+      const ft = far; put('fridge', right - 1, ft, 1, 1); put('coffee', right - 3, ft, 2, 1, { label: 'coffee' }); put('counter', right - 5, ft, 2, 1); put('counter', right - 7, ft, 2, 1); put('cooler', right - 8, ft, 1, 1); put('plant_big', right - 1, near, 1, 1);
+      const row = midRow(r); for (const tx of [left + 2, left + 5]) { put('table', tx, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + dx + 0.5, row - 0.35, 0, true); chair(tx + dx + 0.5, row + 1.35, 4, true); } }
+      put('sofa', left + 1, ft, 2, 1); put('sofa_grey', left + 4, ft, 2, 1); put('plant', left + 6, ft, 1, 1);
     } else if (r.kind === 'lounge') {
       put('sofa', left + 1, far, 2, 1); put('sofa_grey', left + 4 < right - 2 ? left + 4 : left + 1, far + (r.south ? -2 : 2), 2, 1); put('plant_big', right - 1, far, 1, 1);
       if (r.n >= 4 && r.w >= 7) for (const y of [r.y + 1, r.y + 3]) if (podFree(right - 4, y)) { pod(right - 4, y); break; }
@@ -87,7 +87,7 @@ export function buildFloor(floor) {
   for (const hx of [ox + 3, ox + 78]) { light(hx, oy + 10.5, 380, 0xfff6ea); light(hx, oy + 4, 300, 0xfff6ea); light(hx, oy + 17, 300, 0xfff6ea); }
   // ---- stairs: one in each end hall, one in each kitchen
   const kit = rooms.find(r => r.kind === 'kitchen');
-  for (const [id, x, y] of [['W', ox + 3, oy + 3], ['E', ox + 77, oy + 3], ['K', kit.x + kit.w - 3, kit.south ? kit.y : kit.y + kit.h - 2]]) addStairs(id, x, y, floor === 0 ? 1 : 0);
+  for (const [id, x, y] of [['W', ox + 3, oy + 3], ['E', ox + 77, oy + 3], ['K', kit.x, kit.south ? kit.y : kit.y + kit.h - 2]]) addStairs(id, x, y, floor === 0 ? 1 : 0);
   if (floor === 1) { addStairs('RW', ox + 3, oy + 16, 2); addStairs('RE', ox + 77, oy + 16, 2); } // the way up to the roof
   // ---- colleagues
   const at = (id, dx, dy) => { const r = rooms.find(r => r.id === id); return { x: r.x + dx, y: r.y + dy }; };
@@ -95,7 +95,7 @@ export function buildFloor(floor) {
     npcs.push({ id: 'sofie', name: 'Sofie', role: 'Reception', ...at('lobby', 3.5, 2.7), dir: 0, lines: ['Welcome to building 305!', 'Meeting rooms 206, 208 and 222 are upstairs. There are stairs at both ends, and one in each kitchen.', 'Visitors sign in with me. Colleagues just wave.'] });
     npcs.push({ id: 'anna', name: 'Anna', role: 'Admin', ...at('106', 1.5, 2.5), dir: 0, lines: ['Hi! If the printer is jammed, it is always the one in 108.', 'Need a desk for a week? Ask me. Need one for a month? Ask me nicely.', 'The kitchen has the good coffee machine. Do not tell the other floor.'] });
     npcs.push({ id: 'erik', name: 'Erik', role: 'DST', ...at('105', 11.5, 6.5), dir: 0, lines: ['Shh... the build is running.', 'It passes locally. That is all I am going to say.', 'The whiteboards are free. The markers are somewhere. Mostly.'] });
-    npcs.push({ id: 'mads', name: 'Mads', role: 'Kitchen', x: kit.x + 6.5, y: kit.y + (kit.south ? kit.h - 3 : 3), dir: 0, lines: ['Fresh coffee. Cup number four, but who is counting?', 'The fridge is a shared ecosystem. Label your lunch.', 'The first floor has a twin of this kitchen. It is quieter.'] });
+    npcs.push({ id: 'mads', name: 'Mads', role: 'Kitchen', x: kit.x + kit.w - 6.5, y: kit.y + (kit.south ? kit.h - 3 : 3), dir: 0, lines: ['Fresh coffee. Cup number four, but who is counting?', 'The fridge is a shared ecosystem. Label your lunch.', 'The first floor has a twin of this kitchen. It is quieter.'] });
     npcs.push({ id: 'freja', name: 'Freja', role: 'Outside', x: ox + 24.5, y: oy - 3, dir: 0, lines: ['Taking five minutes of sunshine.', 'You can walk all around the building, the yard goes on both sides.', 'The cars are decorative. Do not try to start them.'] });
   } else {
     npcs.push({ id: 'freja', name: 'Freja', role: 'Hot desks', ...at('HD', 3.5, 4.5), dir: 0, lines: ['Hot desk today, a different one tomorrow. Like a nomad with a laptop.', 'I can only focus in the student room when it is silent.'] });

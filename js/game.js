@@ -74,8 +74,8 @@ export class GameScene extends Phaser.Scene {
     this.items = []; this.chairs = []; this.coffee = [];
     for (const p of this.L.props) {
       const key = 'prop_' + p.t, info = this.sheets[key]; if (!info) continue; const cx = (p.x + p.w / 2) * TW, cy = (p.y + p.h / 2) * TH, bottom = cy + p.h * TH / 2;
-      if (!p.chair && !['whiteboard', 'tv'].includes(p.t) && p.t !== 'bench') this.add.image(cx, cy + 2, 'shadow').setScale(p.w * TW * 0.95 / 64, p.h * TH * 0.95 / 32 * 0.5 + 0.12).setAlpha(0.9).setDepth(1);
-      const s = this.add.sprite(cx, cy, key, 0).setOrigin(0.5, info.originY).setScale(PS * PPM * info.view / 128).setDepth(p.chair ? cy + 6 : p.t === 'whiteboard' || p.t === 'tv' ? cy - 6 : bottom); p.spr = s; p.cx = cx; p.cy = cy;
+      if (!p.chair && !['whiteboard', 'tv', 'tv_w'].includes(p.t) && p.t !== 'bench') this.add.image(cx, cy + 2, 'shadow').setScale(p.w * TW * 0.95 / 64, p.h * TH * 0.95 / 32 * 0.5 + 0.12).setAlpha(0.9).setDepth(1);
+      const s = this.add.sprite(cx, cy, key, 0).setOrigin(0.5, info.originY).setScale(PS * PPM * info.view / 128).setDepth(p.chair ? cy + 6 : ['whiteboard', 'tv', 'tv_w'].includes(p.t) ? cy - 6 : bottom); p.spr = s; p.cx = cx; p.cy = cy;
       if (p.chair) this.chairs.push(p); if (p.label === 'coffee') this.coffee.push(p);
     }
     for (const s of this.L.stairs) { const spr = this.add.image((s.x + 1) * TW, (s.y + 1) * TH, s.up ? 'stairs_up' : 'stairs_down').setScale(0.7).setDepth((s.y + 2) * TH); s.cx = (s.x + 1) * TW; s.cy = (s.y + 1) * TH; s.spr = spr; }
@@ -123,7 +123,7 @@ export class GameScene extends Phaser.Scene {
   showLine() { const t = this.talk, n = t.npc; UI.dialog(n.name, n.role, n.lines[t.i], t.i < n.lines.length - 1); }
   nextLine() { const t = this.talk; t.i++; if (t.i >= t.npc.lines.length) { t.npc.wait = 1.2; this.talk = null; UI.dialog(null); return; } sfx.chat(); this.showLine(); }
   sitDown(ch) {
-    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx; p.y = ch.cy + 6 + (side ? 6 : ch.dir === 0 ? 4 : 10); p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
+    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx + (ch.dir === 6 ? 15 : ch.dir === 2 ? -15 : 0); p.y = side ? ch.cy - 6 : ch.cy + 6 + (ch.dir === 0 ? 4 : 10); // sideways, the seated pelvis sits behind the sprite's root, so the figure is nudged forward onto the seat p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
     this.tweens.add({ targets: this.cameras.main, zoom: 1.6, duration: 500, ease: 'Cubic.easeInOut' }); this.zoom = 1.6;
     UI.toast('Seated', 'Soon: something to do at your desk', '#f0d6a8', 2600);
   }
@@ -151,7 +151,7 @@ export class GameScene extends Phaser.Scene {
     const sx = Math.floor(p.x / TW), sy = Math.floor(p.y / TH), L = this.L; for (let dy = -7; dy <= 7; dy++) for (let dx = -11; dx <= 11; dx++) { if (dx * dx / 121 + dy * dy / 49 > 1) continue; const x = sx + dx, y = sy + dy; if (x >= 0 && y >= 0 && x < L.W && y < L.H) this.explored[y * L.W + x] = 1; }
   }
   syncPlayer() { const p = this.p, seat = this.sit ? this.sit.chair : null; p.spr.setPosition(p.x, p.y + (seat ? 8 : 0)).setDepth(seat ? seat.cy + 14 + (seat.dir === 4 ? 34 : 0) : p.y); p.sh.setPosition(p.x, p.y).setDepth(seat ? seat.cy + 3 : p.y - 1); this.playerLight.x = p.x; this.playerLight.y = p.y - 34; this.camTarget.setPosition(p.x, p.y - 34); }
-  animPlayer() { const p = this.p; if (this.sit) { if (this.sit.leaving) return; const k = `${p.prefix}_${this.time.now - this.sit.t0 > 800 ? 'sit' : 'sitdown'}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== k) p.spr.play(k); return; } const a = p.moving ? 'move' : 'idle'; const key = `${p.prefix}_${a}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== key) p.spr.play(key); p.spr.anims.timeScale = this.keys.SHIFT.isDown && p.moving ? 1.5 : 1; }
+  animPlayer() { const p = this.p; if (this.sit) { if (this.sit.leaving) return; p.spr.setOrigin(0.5, this.sheets.npc_you_sit.originY); const k = `${p.prefix}_${this.time.now - this.sit.t0 > 800 ? 'sit' : 'sitdown'}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== k) p.spr.play(k); return; } p.spr.setOrigin(0.5, this.sheets.npc_you_idle.originY); const a = p.moving ? 'move' : 'idle'; const key = `${p.prefix}_${a}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== key) p.spr.play(key); p.spr.anims.timeScale = this.keys.SHIFT.isDown && p.moving ? 1.5 : 1; }
   updateNpcs(dt) {
     const p = this.p;
     for (const n of this.npcs) {

@@ -5,8 +5,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-export const FRAME = 128, SS = 2, PITCH = 42 * Math.PI / 180; let VIEW = 2.3, CENTER = 1.0;
-const KIT = '../../cs-game/models/q/', KATANA = '../../cs-game/models/antique_katana_01/antique_katana_01_2k.gltf';
+export const FRAME = 128, SS = 2; export let PITCH = 42 * Math.PI / 180; export const setPitch = deg => { PITCH = deg * Math.PI / 180; }; let VIEW = 2.3, CENTER = 1.0;
+const KIT = 'kit/q/', KATANA = 'kit/antique_katana_01/antique_katana_01_2k.gltf';
 const OUT = 'http://127.0.0.1:8092/save?name=';
 const DIRS = [0, -45, -90, -135, 180, 135, 90, 45]; // facing S SW W NW N NE E SE as seen from the camera
 const yUp = new THREE.Vector3(0, 1, 0), Z_NEG = new THREE.Vector3(0, 0, -1);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Static server with caching switched off, for working on the game and the sprite renderer:  python3 dungeon-2d/tools/devserver.py [port]  (run from the folder that holds dungeon-2d and cs-game)
+# Static server with caching switched off, for working on the game and the sprite renderer:  python3 dungeon-2d/tools/devserver.py [port]  (run from the folder that holds dungeon-2d)
 import http.server, sys
 class H(http.server.SimpleHTTPRequestHandler):
     def end_headers(self): self.send_header('Cache-Control', 'no-store'); super().end_headers()
