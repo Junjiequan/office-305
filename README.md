@@ -1,6 +1,6 @@
 # Office 305
 
-A bright, modern 2D exploration game set in building 305 at DTU Lyngby: two floors, a yard, handcrafted rooms, NPCs to chat with and desks to sit at (more desk activities to come).
+A bright, modern 2D exploration game set in building 305 at DTU Lyngby: two floors, a roof garden, a yard, handcrafted rooms, NPCs to chat with and desks to sit at (more desk activities to come).
 
 Run locally (no build step):
 

@@ -18,7 +18,7 @@ export function initUI(game) {
     <div id="toast"></div>
   </div>
   <div id="menu" class="overlay show">
-    <h1>Office 305</h1><div class="sub">Building 305 · DTU Lyngby · two floors to explore</div>
+    <h1>Office 305</h1><div class="sub">Building 305 · DTU Lyngby · two floors and a roof to explore</div>
     <div class="cards" id="cards"></div>
     <button class="btn" id="startbtn">Walk in</button>
     <div class="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk &nbsp; <kbd>Shift</kbd> hurry &nbsp; <kbd>E</kbd> talk to a colleague, sit down, take the stairs &nbsp; <kbd>Esc</kbd> pause &nbsp; <kbd>M</kbd> mute</div>
@@ -45,14 +45,14 @@ export function showMenu() {
   UI.el.hud.style.display = 'none'; UI.show('pause', false); UI.show('menu', true); UI.dialog(null);
 }
 function buildMenu() {
-  const cards = $('cards'); cards.innerHTML = ''; UI.selected = localStorage.getItem('office305Hero') || 'ninja'; UI.cardCanvases = {};
+  const cards = $('cards'); cards.innerHTML = ''; UI.selected = 'boxer'; UI.cardCanvases = {};
   for (const [k, h] of Object.entries(AVATARS)) {
     const d = document.createElement('div'); d.className = 'card' + (k === UI.selected ? ' sel' : ''); d.dataset.k = k;
     d.innerHTML = `<canvas width="128" height="128"></canvas><h3>${h.name}</h3><p>${h.blurb}</p>`;
     d.onclick = () => { UI.selected = k; localStorage.setItem('office305Hero', k); [...cards.children].forEach(c => c.classList.toggle('sel', c.dataset.k === k)); sfx.click(); }; d.ondblclick = () => startRun(k);
     cards.appendChild(d); UI.cardCanvases[k] = d.querySelector('canvas');
   }
-  let f = 0, last = 0; const tick = t => { if (t - last > 140) { last = t; f++; for (const [k, c] of Object.entries(UI.cardCanvases)) { const tex = UI.game.textures.get(`hero_${k}_idle`).getSourceImage(), x = c.getContext('2d'); x.clearRect(0, 0, 128, 128); x.drawImage(tex, (f % 6) * 128, 0, 128, 128, 0, 0, 128, 128); } } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+  let f = 0, last = 0; const tick = t => { if (t - last > 140) { last = t; f++; for (const [k, c] of Object.entries(UI.cardCanvases)) { const tex = UI.game.textures.get('npc_you_idle').getSourceImage(), x = c.getContext('2d'); x.clearRect(0, 0, 128, 128); x.drawImage(tex, (f % 6) * 128, 0, 128, 128, 0, 0, 128, 128); } } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
 }
 // ---- called by the game scene
 UI.location = (name, floorText) => { const set = (id, v) => { if (cache[id] !== v) { cache[id] = v; $(id).textContent = v; } }; set('locname', name); set('locfloor', floorText); };

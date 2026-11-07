@@ -1,4 +1,4 @@
-import { PPM, TW, TH, K, PS, AVATARS, ZONES, WALL_TEX } from './data.js';
+import { PPM, TW, TH, K, PS, CHAR, AVATARS, ZONES, WALL_TEX } from './data.js';
 import { buildFloor, ZONE_LIST, TINTS, BW, BH } from './office.js';
 import { sfx, clamp, lerp, TAU, dirOf } from './fx.js';
 import { UI } from './ui.js';
@@ -11,7 +11,7 @@ const COFFEE_LINES = ['Tastes like Monday.', 'Strong enough to stand a spoon in.
 export class GameScene extends Phaser.Scene {
   constructor() { super('Game'); }
   init(d) { this.d = d; }
-  preload() { const reg = this.registry.get('sheets'); this.need = [`hero_${this.d.hero}_walk`]; for (const k of this.need) if (reg[k] && !this.textures.exists(k)) this.load.spritesheet(k, 'assets/' + reg[k].file, { frameWidth: reg[k].frame, frameHeight: reg[k].frame }); }
+  preload() { const reg = this.registry.get('sheets'); this.need = []; }
   create() {
     const d = this.d; this.hero = d.hero; this.floor = d.floor || 0; this.sheets = this.registry.get('sheets'); makeAnimsFor(this, this.need);
     this.L = buildFloor(this.floor); const L = this.L; this.worldW = L.W * TW; this.worldH = L.H * TH; this.t = 0; this.paused = false; this.frame = 0; this.lightsDyn = []; window.__g = this;
@@ -84,7 +84,7 @@ export class GameScene extends Phaser.Scene {
     this.npcs = []; const L = this.L;
     for (const n of L.npcs) {
       const prefix = 'npc_' + n.id, info = this.sheets[prefix + '_idle']; if (!info) continue; const x = (n.x + 0.5) * TW, y = (n.y + 0.5) * TH;
-      const spr = this.add.sprite(x, y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128).setDepth(y), sh = this.add.image(x, y, 'shadow').setScale(0.7, 0.9).setDepth(1);
+      const spr = this.add.sprite(x, y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128 * CHAR).setDepth(y), sh = this.add.image(x, y, 'shadow').setScale(0.7 * CHAR, 0.9 * CHAR).setDepth(1);
       const npc = Object.assign({}, n, { x, y, hx: 14, hy: 8, prefix, spr, sh, dir: n.dir || 0, anim: '', route: null, wait: 0, line: 0 });
       if (n.id === 'freja' && this.floor === 0) npc.route = [[x, y], [x + 14 * TW, y]];
       this.setAnim(npc, 'idle'); npc.spr.anims.setProgress(Math.random()); this.npcs.push(npc);
@@ -92,10 +92,10 @@ export class GameScene extends Phaser.Scene {
   }
   setAnim(e, a, force) { const key = `${e.prefix}_${a}_${e.dir}`; if (force || e.spr.anims.currentAnim?.key !== key) { e.spr.play(key); } e.anim = a; }
   makePlayer() {
-    const prefix = 'hero_' + this.hero, info = this.sheets[prefix + '_idle'], d = this.d; let sp = this.L.spawn, spawnX = (sp.x) * TW, spawnY = sp.y * TH;
+    const prefix = 'npc_you', info = this.sheets[prefix + '_idle'], d = this.d; let sp = this.L.spawn, spawnX = (sp.x) * TW, spawnY = sp.y * TH;
     if (d.from) { const st = this.L.stairs.find(s => s.id === d.from); if (st) { spawnX = (st.x + 1) * TW; spawnY = (st.y + 3.1) * TH; } }
     const p = this.p = { prefix, x: spawnX, y: spawnY, vx: 0, vy: 0, hx: 12, hy: 8, dir: 0, moving: false, anim: '', stepT: 0, speed: AVATARS[this.hero].speed };
-    p.spr = this.add.sprite(p.x, p.y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128).setDepth(p.y); p.sh = this.add.image(p.x, p.y, 'shadow').setScale(0.75, 0.95).setDepth(1);
+    p.spr = this.add.sprite(p.x, p.y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128 * CHAR).setDepth(p.y); p.sh = this.add.image(p.x, p.y, 'shadow').setScale(0.75 * CHAR, 0.95 * CHAR).setDepth(1);
     this.setAnim(p, 'idle', true); this.playerLight = { x: p.x, y: p.y - 30, r: 190, color: 0xffeccc, k: 0.55 };
   }
   setupInput() {
@@ -123,14 +123,15 @@ export class GameScene extends Phaser.Scene {
   showLine() { const t = this.talk, n = t.npc; UI.dialog(n.name, n.role, n.lines[t.i], t.i < n.lines.length - 1); }
   nextLine() { const t = this.talk; t.i++; if (t.i >= t.npc.lines.length) { t.npc.wait = 1.2; this.talk = null; UI.dialog(null); return; } sfx.chat(); this.showLine(); }
   sitDown(ch) {
-    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y } }; p.x = ch.cx; p.y = ch.cy + 6 + (ch.dir === 0 ? 4 : 10); p.vx = p.vy = 0; p.dir = ch.dir === 4 ? 4 : 0; sfx.sit();
+    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx; p.y = ch.cy + 6 + (side ? 6 : ch.dir === 0 ? 4 : 10); p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
     this.tweens.add({ targets: this.cameras.main, zoom: 1.6, duration: 500, ease: 'Cubic.easeInOut' }); this.zoom = 1.6;
     UI.toast('Seated', 'Soon: something to do at your desk', '#f0d6a8', 2600);
   }
-  standUp() { const p = this.p, s = this.sit; this.sit = null; const off = s.chair.dir === 0 ? -1 : 1; p.x = s.from.x; p.y = s.from.y; if (!this.boxFree(p.x, p.y, p.hx, p.hy)) { p.x = s.chair.cx; p.y = s.chair.cy + off * 30; } this.tweens.add({ targets: this.cameras.main, zoom: 1.3, duration: 450, ease: 'Cubic.easeInOut' }); this.zoom = 1.3; sfx.sit(); }
+  standUp() { const s = this.sit; if (!s || s.leaving) return; s.leaving = true; this.p.spr.playReverse(`${this.p.prefix}_sitdown_${this.p.dir}`); sfx.sit(); this.time.delayedCall(360, () => this.finishStand()); }
+  finishStand() { const p = this.p, s = this.sit; if (!s) return; this.sit = null; const c = s.chair; p.x = s.from.x; p.y = s.from.y; if (!this.boxFree(p.x, p.y, p.hx, p.hy)) for (const [dx, dy] of [[0, 46], [0, -46], [-34, 10], [34, 10], [0, 0]]) { p.x = c.cx + dx; p.y = c.cy + 6 + dy; if (this.boxFree(p.x, p.y, p.hx, p.hy)) break; } this.tweens.add({ targets: this.cameras.main, zoom: 1.3, duration: 450, ease: 'Cubic.easeInOut' }); this.zoom = 1.3; }
   useStairs(s) {
     this.transition = true; sfx.stairs(); this.cameras.main.fadeOut(300, 11, 10, 18); UI.prompt(null);
-    this.time.delayedCall(320, () => this.scene.restart({ hero: this.hero, floor: this.floor === 0 ? 1 : 0, from: s.id }));
+    this.time.delayedCall(320, () => this.scene.restart({ hero: this.hero, floor: s.to, from: s.id }));
   }
 
   // ---------------------------------------------------------------- per frame
@@ -150,7 +151,7 @@ export class GameScene extends Phaser.Scene {
     const sx = Math.floor(p.x / TW), sy = Math.floor(p.y / TH), L = this.L; for (let dy = -7; dy <= 7; dy++) for (let dx = -11; dx <= 11; dx++) { if (dx * dx / 121 + dy * dy / 49 > 1) continue; const x = sx + dx, y = sy + dy; if (x >= 0 && y >= 0 && x < L.W && y < L.H) this.explored[y * L.W + x] = 1; }
   }
   syncPlayer() { const p = this.p, seat = this.sit ? this.sit.chair : null; p.spr.setPosition(p.x, p.y + (seat ? 8 : 0)).setDepth(seat ? seat.cy + 14 + (seat.dir === 4 ? 34 : 0) : p.y); p.sh.setPosition(p.x, p.y).setDepth(seat ? seat.cy + 3 : p.y - 1); this.playerLight.x = p.x; this.playerLight.y = p.y - 34; this.camTarget.setPosition(p.x, p.y - 34); }
-  animPlayer() { const p = this.p, a = p.moving ? 'walk' : 'idle'; const key = `${p.prefix}_${a}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== key) p.spr.play(key); p.spr.anims.timeScale = this.keys.SHIFT.isDown && p.moving ? 1.5 : 1; }
+  animPlayer() { const p = this.p; if (this.sit) { if (this.sit.leaving) return; const k = `${p.prefix}_${this.time.now - this.sit.t0 > 800 ? 'sit' : 'sitdown'}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== k) p.spr.play(k); return; } const a = p.moving ? 'move' : 'idle'; const key = `${p.prefix}_${a}_${p.dir}`; if (p.spr.anims.currentAnim?.key !== key) p.spr.play(key); p.spr.anims.timeScale = this.keys.SHIFT.isDown && p.moving ? 1.5 : 1; }
   updateNpcs(dt) {
     const p = this.p;
     for (const n of this.npcs) {
@@ -161,9 +162,9 @@ export class GameScene extends Phaser.Scene {
     }
   }
   roomAt(px, py) {
-    const L = this.L, cx = Math.floor(px / TW), cy = Math.floor(py / TH);
-    for (const r of L.rooms) if (cx >= r.x && cx < r.x + r.w && cy >= r.y && cy < r.y + r.h) return { name: r.name, floor: this.floor ? 'First floor' : 'Ground floor' };
-    const bx = cx - L.ox, by = cy - L.oy; if (bx >= 0 && bx < BW && by >= 0 && by < BH) { if (bx <= 7 || bx >= 74) return { name: 'Stair hall', floor: this.floor ? 'First floor' : 'Ground floor' }; return { name: 'Corridor', floor: this.floor ? 'First floor' : 'Ground floor' }; }
+    const L = this.L, cx = Math.floor(px / TW), cy = Math.floor(py / TH), fl = ['Ground floor', 'First floor', 'Roof'][this.floor];
+    for (const r of L.rooms) if (cx >= r.x && cx < r.x + r.w && cy >= r.y && cy < r.y + r.h) return { name: r.name, floor: fl };
+    const bx = cx - L.ox, by = cy - L.oy; if (bx >= 0 && bx < BW && by >= 0 && by < BH) { if (this.floor === 2) return { name: ZONE_LIST[L.zone[cy * L.W + cx]] === 'grass' ? 'Roof garden' : 'Roof terrace', floor: fl }; if (bx <= 7 || bx >= 74) return { name: 'Stair hall', floor: fl }; return { name: 'Corridor', floor: fl }; }
     const z = ZONE_LIST[L.zone[cy * L.W + cx]]; return { name: z === 'asphalt' ? 'Parking' : z === 'grass' ? 'Lawn' : 'Yard', floor: 'Outside' };
   }
   updateRoom() { const r = this.roomAt(this.p.x, this.p.y); if (!this.room || r.name !== this.room.name) { this.room = r; UI.location(r.name, r.floor); } }

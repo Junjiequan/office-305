@@ -4,11 +4,11 @@ import { TAU } from './fx.js';
 
 const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
 const radial = (x, w, h, stops) => { const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) / 2); for (const [t, c] of stops) g.addColorStop(t, c); return g; };
-const RATES = { idle: 7, walk: 11, move: 9 };
+const RATES = { idle: 7, walk: 11, move: 9, sit: 6, sitdown: 10 };
 // animations for every loaded character sheet that does not have them yet (hero_ninja_walk -> hero_ninja_walk_<dir>)
 export function makeAnimsFor(scene, keys) {
   const A = scene.anims, reg = scene.registry.get('sheets');
-  for (const key of keys) { const m = reg[key]; if (!m || !scene.textures.exists(key) || key.startsWith('prop_')) continue; for (let d = 0; d < m.rows; d++) if (!A.exists(`${key}_${d}`)) A.create({ key: `${key}_${d}`, frames: A.generateFrameNumbers(key, { start: d * m.cols, end: d * m.cols + m.cols - 1 }), frameRate: RATES[key.split('_').pop()] || 8, repeat: -1 }); }
+  for (const key of keys) { const m = reg[key]; if (!m || !scene.textures.exists(key) || key.startsWith('prop_')) continue; for (let d = 0; d < m.rows; d++) if (!A.exists(`${key}_${d}`)) A.create({ key: `${key}_${d}`, frames: A.generateFrameNumbers(key, { start: d * m.cols, end: d * m.cols + m.cols - 1 }), frameRate: RATES[key.split('_').pop()] || 8, repeat: key.endsWith('_sitdown') ? 0 : -1 }); }
 }
 export class Boot extends Phaser.Scene {
   constructor() { super('Boot'); }

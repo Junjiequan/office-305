@@ -20,7 +20,19 @@ export function buildFloor(floor) {
   const put = (t, x, y, w = 1, h = 1, o = {}) => { const p = Object.assign({ t, x, y, w, h, solid: true }, o); props.push(p); if (p.solid) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) occ.add(Math.floor(x + i) + ',' + Math.floor(y + j)); return p; };
   const free = (x, y, w = 1, h = 1) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const xx = Math.floor(x + i), yy = Math.floor(y + j); if (xx < 1 || yy < 1 || xx >= W - 1 || yy >= H - 1 || !cells[I(xx, yy)] || occ.has(xx + ',' + yy)) return false; } return true; };
   const light = (x, y, r, color) => lights.push({ x: x * 64, y: y * 43, r, color });
-  const chair = (x, y, dir, m = false) => put((m ? 'chair_m_' : 'chair_') + (dir === 4 ? 'n' : 's'), x - 0.5, y - 0.5, 1, 1, { solid: false, chair: true, dir }); // x, y: where the chair stands (tile units)
+  const chair = (x, y, dir, m = false) => put((m ? 'chair_m_' : 'chair_') + ({ 4: 'n', 6: 'e', 2: 'w' }[dir] || 's'), x - 0.5, y - 0.5, 1, 1, { solid: false, chair: true, dir }); // x, y: where the chair stands (tile units)
+  const addStairs = (id, x, y, to) => { stairs.push({ id, x, y, w: 2, h: 2, up: to > floor, to }); for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) occ.add((x + i) + ',' + (y + j)); };
+  if (floor === 2) { // ---- the roof: a flat terrace with a roof garden, reached only by the two stairs from the first floor
+    fill(ox + 1, oy + 1, BW - 2, BH - 2, 'roof'); fill(ox + 22, oy + 5, 38, 12, 'grass'); fill(ox + 20, oy + 10, 2, 2, 'paving'); fill(ox + 60, oy + 10, 2, 2, 'paving'); fill(ox + 22, oy + 10, 38, 2, 'paving');
+    for (const [x, y] of [[ox + 24, oy + 6], [ox + 30, oy + 7], [ox + 37, oy + 6], [ox + 44, oy + 7], [ox + 51, oy + 6], [ox + 57, oy + 7], [ox + 27, oy + 14], [ox + 34, oy + 14], [ox + 47, oy + 14], [ox + 55, oy + 14]]) put((x + y) % 2 ? 'tree' : 'tree_b', x, y, 1, 1);
+    for (const x of [ox + 26, ox + 33, ox + 40, ox + 48, ox + 55]) put('bench', x, oy + 9, 2, 1);
+    for (const x of [ox + 8, ox + 14, ox + 68, ox + 74]) { put('plant_big', x, oy + 2, 1, 1); put('plant_big', x, oy + BH - 3, 1, 1); }
+    for (const x of [ox + 12, ox + 25, ox + 41, ox + 57, ox + 70]) put('lamp', x, oy + 3, 1, 1);
+    for (const [x, y] of [[ox + 10, oy + 8], [ox + 10, oy + 13], [ox + 72, oy + 8], [ox + 72, oy + 13]]) put('bench', x, y, 2, 1);
+    addStairs('RW', ox + 3, oy + 16, 1); addStairs('RE', ox + 77, oy + 16, 1);
+    npcs.push({ id: 'erik', name: 'Erik', role: 'Roof', x: ox + 40.5, y: oy + 11.5, dir: 0, lines: ['Best view in Lyngby. On a clear day you can nearly see the sea.', 'Nobody ever remembers the roof garden. That is why it is quiet.', 'The way back down is the stairs where you came up.'] });
+    return { floor, W, H, ox, oy, cells, zone, tint, wallTint, props, rooms, signs, npcs, stairs, lights, spawn: { x: ox + 4, y: oy + 12 } };
+  }
   // ---- the building: all wall, then carve the corridor, halls and rooms
   fill(ox + 1, oy + R.c0, BW - 2, 4, 'corridor'); fill(ox + 1, oy + 1, 6, BH - 2, 'corridor'); fill(ox + 75, oy + 1, 6, BH - 2, 'corridor');
   const sets = floor === 0 ? [[NORTH0, R.n0, R.n1, false], [SOUTH0, R.s0, R.s1, true]] : [[NORTH1, R.n0, R.n1, false], [SOUTH1, R.s0, R.s1, true]];
@@ -48,11 +60,12 @@ export function buildFloor(floor) {
   // ---- furniture, room by room
   const midRow = r => r.y + Math.floor(r.h / 2), layout = r => {
     const left = r.x, right = r.x + r.w, far = r.south ? r.y + r.h - 1 : r.y, near = r.south ? r.y : r.y + r.h - 1;
-    // desks stand side by side in horizontal rows; everyone sits north of their desk, facing the screen (and the room)
-    const deskRow = (x, rowTop, count) => { for (let i = 0; i < count; i++) { put('desk_a', x + i * 2, rowTop, 2, 1, { desk: true }); chair(x + i * 2 + 1, rowTop - 0.35, 0); } };
-    const deskRows = (r, total) => { const x0 = r.x + (r.w >= 9 ? 3 : 1), perRow = Math.max(1, Math.floor((r.x + r.w - x0) / 2)), rows = Math.min(2, Math.ceil(total / perRow)); let left = total; for (let k = 0; k < rows; k++) { const c = Math.min(perRow, left); deskRow(x0, r.y + 2 + k * 3, c); left -= c; } };
+    // a pod is four desks: two rows of  [chair desk | desk chair]  with the aisle (hall side) kept free
+    const pod = (x, y) => { for (let k = 0; k < 2; k++) { const yy = y + k * 2; put('desk_e', x + 1, yy, 1, 2, { desk: true }); chair(x + 0.65, yy + 1, 6); put('desk_w', x + 2, yy, 1, 2, { desk: true }); chair(x + 3.35, yy + 1, 2); } };
+    const podFree = (x, y) => free(x, y, 4, 4);
     if (r.kind === 'office') {
-      deskRows(r, r.n);
+      const nb = Math.max(1, Math.ceil(r.n / 4)), total = nb * 4 + (nb - 1), x0 = left + Math.max(0, Math.floor((r.w - total) / 2));
+      for (let i = 0; i < nb; i++) pod(x0 + i * 5, r.y + 1);
       if (r.w >= 9) put('shelf', right - 2, far, 2, 1); if (r.w > 6 && r.w < 9) put('cabinet', right - 1, far, 1, 1); if (r.w > 6) put('cabinet', left, far, 1, 1); if (r.w > 8) put('plant', right - 1, near, 1, 1); if (r.w >= 9) put('whiteboard', left + 3, far, 2, 1, { solid: false });
     } else if (r.kind === 'meeting' || r.kind === 'small') {
       const segs = Math.max(1, Math.min(4, Math.floor((r.w - 2) / 2))), tx = left + Math.floor((r.w - segs * 2) / 2), row = midRow(r);
@@ -64,7 +77,7 @@ export function buildFloor(floor) {
       put('sofa', left + 6, near, 2, 1); put('plant', right - 1, far === near ? near : near, 1, 1);
     } else if (r.kind === 'lounge') {
       put('sofa', left + 1, far, 2, 1); put('sofa_grey', left + 4 < right - 2 ? left + 4 : left + 1, far + (r.south ? -2 : 2), 2, 1); put('plant_big', right - 1, far, 1, 1);
-      if (r.n >= 4 && r.w >= 7) deskRow(left + 2, r.south ? r.y + 2 : r.y + 4, Math.min(3, Math.floor((r.w - 3) / 2)));
+      if (r.n >= 4 && r.w >= 7) for (const y of [r.y + 1, r.y + 3]) if (podFree(right - 4, y)) { pod(right - 4, y); break; }
     } else if (r.kind === 'printer') { put('printer', left, far, 1, 1); put('cabinet', right - 1, far, 1, 1); }
     else if (r.kind === 'lobby') { put('reception', left + 1, r.y + 1, 3, 1); put('sofa', left + 1, r.y + 4, 2, 1); put('plant_big', left, near, 1, 1); put('lamp', right - 1, r.y, 1, 1); put('plant_big', right - 1, near, 1, 1); }
   };
@@ -74,7 +87,8 @@ export function buildFloor(floor) {
   for (const hx of [ox + 3, ox + 78]) { light(hx, oy + 10.5, 380, 0xfff6ea); light(hx, oy + 4, 300, 0xfff6ea); light(hx, oy + 17, 300, 0xfff6ea); }
   // ---- stairs: one in each end hall, one in each kitchen
   const kit = rooms.find(r => r.kind === 'kitchen');
-  for (const [id, x, y] of [['W', ox + 3, oy + 3], ['E', ox + 77, oy + 3], ['K', kit.x + kit.w - 3, kit.south ? kit.y : kit.y + kit.h - 2]]) { stairs.push({ id, x, y, w: 2, h: 2, up: floor === 0 }); for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) occ.add((x + i) + ',' + (y + j)); }
+  for (const [id, x, y] of [['W', ox + 3, oy + 3], ['E', ox + 77, oy + 3], ['K', kit.x + kit.w - 3, kit.south ? kit.y : kit.y + kit.h - 2]]) addStairs(id, x, y, floor === 0 ? 1 : 0);
+  if (floor === 1) { addStairs('RW', ox + 3, oy + 16, 2); addStairs('RE', ox + 77, oy + 16, 2); } // the way up to the roof
   // ---- colleagues
   const at = (id, dx, dy) => { const r = rooms.find(r => r.id === id); return { x: r.x + dx, y: r.y + dy }; };
   if (floor === 0) {
