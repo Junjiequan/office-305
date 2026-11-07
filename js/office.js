@@ -21,7 +21,7 @@ export function buildFloor(floor) {
   const free = (x, y, w = 1, h = 1) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const xx = Math.floor(x + i), yy = Math.floor(y + j); if (xx < 1 || yy < 1 || xx >= W - 1 || yy >= H - 1 || !cells[I(xx, yy)] || occ.has(xx + ',' + yy)) return false; } return true; };
   const light = (x, y, r, color) => lights.push({ x: x * 64, y: y * 43, r, color });
   const chair = (x, y, dir, m = false) => put((m ? 'chair_m_' : 'chair_') + ({ 4: 'n', 6: 'e', 2: 'w' }[dir] || 's'), x - 0.5, y - 0.5, 1, 1, { solid: false, chair: true, dir }); // x, y: where the chair stands (tile units)
-  const addStairs = (id, x, y, to) => { stairs.push({ id, x, y, w: 2, h: 2, up: to > floor, to }); for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) occ.add((x + i) + ',' + (y + j)); };
+  const addStairs = (id, x, y, to) => { stairs.push({ id, x, y, w: 2, h: 2, up: to > floor, to }); if (to === 2) signs.push({ text: 'Roof ↑', x: x + 1, y: y - 0.7 }); else if (floor === 2) signs.push({ text: 'Down ↓', x: x + 1, y: y - 0.7 }); for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) occ.add((x + i) + ',' + (y + j)); };
   if (floor === 2) { // ---- the roof: a flat terrace with a roof garden, reached only by the two stairs from the first floor
     fill(ox + 1, oy + 1, BW - 2, BH - 2, 'roof'); fill(ox + 22, oy + 5, 38, 12, 'grass'); fill(ox + 20, oy + 10, 2, 2, 'paving'); fill(ox + 60, oy + 10, 2, 2, 'paving'); fill(ox + 22, oy + 10, 38, 2, 'paving');
     for (const [x, y] of [[ox + 24, oy + 6], [ox + 30, oy + 7], [ox + 37, oy + 6], [ox + 44, oy + 7], [ox + 51, oy + 6], [ox + 57, oy + 7], [ox + 27, oy + 14], [ox + 34, oy + 14], [ox + 47, oy + 14], [ox + 55, oy + 14]]) put((x + y) % 2 ? 'tree' : 'tree_b', x, y, 1, 1);

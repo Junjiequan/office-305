@@ -17,7 +17,7 @@ export class GameScene extends Phaser.Scene {
     this.L = buildFloor(this.floor); const L = this.L; this.worldW = L.W * TW; this.worldH = L.H * TH; this.t = 0; this.paused = false; this.frame = 0; this.lightsDyn = []; window.__g = this;
     this.propSolid = new Uint8Array(L.W * L.H); for (const p of L.props) if (p.solid) for (let j = 0; j < p.h; j++) for (let i = 0; i < p.w; i++) this.propSolid[(p.y + j) * L.W + (p.x + i)] = 1;
     for (const s of L.stairs) for (let j = 0; j < s.h; j++) for (let i = 0; i < s.w; i++) this.propSolid[(s.y + j) * L.W + (s.x + i)] = 1;
-    this.explored = new Uint8Array(L.W * L.H); this.paint(); this.makeProps(); this.makeNpcs(); this.makePlayer(); this.setupInput(); this.setupCamera();
+    this.explored = new Uint8Array(L.W * L.H); this.paint(); this.makeProps(); this.makeNpcs(); this.makePlayer(); this.setupInput(); this.setupCamera(); if (this.floor === 1 && !this.registry.get('roofHint')) { this.registry.set('roofHint', true); this.time.delayedCall(900, () => UI.toast('The roof', 'Take the stairs marked Roof in either end hall', '#f0d6a8', 4200)); }
     this.dark = document.getElementById('dark').getContext('2d'); this.zoomBase = 1.3; this.room = null; this.talk = null; this.sit = null;
     this.cameras.main.fadeIn(450, 11, 10, 18); this.events.once('shutdown', () => { UI.prompt(null); UI.dialog(null); });
     if (d.fresh) UI.toast('Building 305', 'Friday afternoon · take a look around', '#ffe3a0', 3200);
