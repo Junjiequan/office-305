@@ -63,7 +63,11 @@ export function buildFloor(floor) {
     // a pod is four desks: two rows of  [chair desk | desk chair]  with the aisle (hall side) kept free
     const pod = (x, y) => { for (let k = 0; k < 2; k++) { const yy = y + k * 2; put('desk_e', x + 1, yy, 1, 2, { desk: true }); chair(x + 0.65, yy + 1, 6); put('desk_w', x + 2, yy, 1, 2, { desk: true }); chair(x + 3.35, yy + 1, 2); } };
     const podFree = (x, y) => free(x, y, 4, 4);
-    if (r.kind === 'office') {
+    if (r.kind === 'office' && /^2[abcd]$/.test(r.id)) { // the small first-floor offices: one working desk, one table to chat at, a whiteboard
+      put('desk_e', left + 1, r.y + 2, 1, 2, { desk: true }); chair(left + 0.65, r.y + 3, 6);
+      const tx = left + r.w - 2; put('table', tx, r.y + 4, 2, 1, { table: true }); chair(tx + 0.5, r.y + 5.35, 4, true); chair(tx + 1.5, r.y + 5.35, 4, true);
+      put('whiteboard', left, far, 2, 1, { solid: false });
+    } else if (r.kind === 'office') {
       const nb = Math.max(1, Math.ceil(r.n / 4)), total = nb * 4 + (nb - 1), x0 = left + Math.max(0, Math.floor((r.w - total) / 2));
       for (let i = 0; i < nb; i++) pod(x0 + i * 5, r.y + 1);
       if (r.w >= 9) put('shelf', right - 2, far, 2, 1); if (r.w > 6 && r.w < 9) put('cabinet', right - 1, far, 1, 1); if (r.w > 6) put('cabinet', left, far, 1, 1); if (r.w > 8) put('plant', right - 1, near, 1, 1); if (r.w >= 9) put('whiteboard', left + 3, far, 2, 1, { solid: false });
@@ -71,10 +75,10 @@ export function buildFloor(floor) {
       const segs = Math.max(1, Math.min(4, Math.floor((r.w - 2) / 2))), tx = left + Math.floor((r.w - segs * 2) / 2), row = midRow(r);
       for (let s = 0; s < segs; s++) { put('table', tx + s * 2, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + s * 2 + dx + 0.5, row - 0.35, 0, true); chair(tx + s * 2 + dx + 0.5, row + 1.35, 4, true); } }
       if (r.w >= 5) put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('tv_w', right - 1, midRow(r), 1, 2, { solid: false }); if (r.w >= 6) put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
-    } else if (r.kind === 'kitchen') { // a wall splits the room: dining on the left, the kitchen on the right with the sink and coffee machine against the right wall and the fridge against the partition
-      const px = left + 9, ft = far; for (let yy = r.y + 3; yy < r.y + r.h; yy++) cells[I(px, yy)] = 0;
+    } else if (r.kind === 'kitchen') { // a free-standing wall splits the room: dining on the left, the kitchen on the right with the sink and coffee machine against the right wall and the fridge against the partition
+      const px = left + 9, ft = far; for (let yy = r.y + 2; yy < r.y + 5; yy++) cells[I(px, yy)] = 0; // free-standing: people can walk round it at the top or the bottom
       put('coffee_w', right - 1, r.y + 1, 1, 2, { label: 'coffee' }); put('counter_w', right - 1, r.y + 3, 1, 2); put('counter_w', right - 1, r.y + 5, 1, 2);
-      put('fridge', px + 1, r.y + 4, 1, 1); put('cooler', px + 1, r.y + 6, 1, 1); put('plant_big', px + 1, r.y + 1, 1, 1);
+      put('plant_big', px + 1, r.y + 2, 1, 1); put('fridge', px + 1, r.y + 3, 1, 1); put('cooler', px + 1, r.y + 4, 1, 1);
       const row = midRow(r); for (const tx of [left + 2, left + 5]) { put('table', tx, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + dx + 0.5, row - 0.35, 0, true); chair(tx + dx + 0.5, row + 1.35, 4, true); } }
       put('sofa', left + 1, ft, 2, 1); put('sofa_grey', left + 4, ft, 2, 1); put('plant', left + 7, ft, 1, 1);
     } else if (r.kind === 'lounge') {
