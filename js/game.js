@@ -1,4 +1,4 @@
-import { PPM, TW, TH, K, PS, CHAR, AVATARS, ZONES, WALL_TEX } from './data.js';
+import { PPM, TW, TH, K, PS, CHAR, SEAT_POSE, AVATARS, ZONES, WALL_TEX } from './data.js';
 import { buildFloor, ZONE_LIST, TINTS, BW, BH } from './office.js';
 import { sfx, clamp, lerp, TAU, dirOf } from './fx.js';
 import { UI } from './ui.js';
@@ -83,7 +83,7 @@ export class GameScene extends Phaser.Scene {
   makeNpcs() {
     this.npcs = []; const L = this.L;
     for (const n of L.npcs) {
-      const prefix = 'npc_' + n.id, info = this.sheets[prefix + '_idle']; if (!info) continue; const seat = n.seat, x = seat ? (n.x + 0.5) * TW + (seat.dir === 6 ? 15 : -15) : (n.x + 0.5) * TW, y = seat ? (n.y + 0.5) * TH - 6 : (n.y + 0.5) * TH;
+      const prefix = 'npc_' + n.id, info = this.sheets[prefix + '_idle']; if (!info) continue; const seat = n.seat, pose = seat && SEAT_POSE[seat.dir], x = seat ? (n.x + 0.5) * TW + pose.dx : (n.x + 0.5) * TW, y = seat ? (n.y + 0.5) * TH + pose.dy : (n.y + 0.5) * TH;
       const spr = this.add.sprite(x, y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128 * CHAR).setDepth(y), sh = this.add.image(x, y, 'shadow').setScale(0.7 * CHAR, 0.9 * CHAR).setDepth(1);
       const npc = Object.assign({}, n, { x, y, hx: 14, hy: 8, prefix, spr, sh, dir: n.dir || 0, anim: '', route: null, wait: 0, line: 0 });
       if (n.id === 'freja' && this.floor === 0) npc.route = [[x, y], [x + 14 * TW, y]];
@@ -123,7 +123,8 @@ export class GameScene extends Phaser.Scene {
   showLine() { const t = this.talk, n = t.npc; UI.dialog(n.name, n.role, n.lines[t.i], t.i < n.lines.length - 1); }
   nextLine() { const t = this.talk; t.i++; if (t.i >= t.npc.lines.length) { t.npc.wait = 1.2; this.talk = null; UI.dialog(null); return; } sfx.chat(); this.showLine(); }
   sitDown(ch) {
-    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx + (ch.dir === 6 ? 15 : ch.dir === 2 ? -15 : 0); p.y = side ? ch.cy - 6 : ch.cy + (ch.dir === 4 ? -22 : 6); // the seated figure's feet stay in front of the chair, never below it // sideways, the seated pelvis sits behind the sprite's root, so the figure is nudged forward onto the seat p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
+    const p = this.p, pose = SEAT_POSE[ch.dir] || SEAT_POSE[0]; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now };
+    p.x = ch.cx + pose.dx; p.y = ch.cy + pose.dy; p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit(); // the chair direction picks the seated animation row
     this.tweens.add({ targets: this.cameras.main, zoom: 1.6, duration: 500, ease: 'Cubic.easeInOut' }); this.zoom = 1.6;
     UI.toast('Seated', 'Soon: something to do at your desk', '#f0d6a8', 2600);
   }

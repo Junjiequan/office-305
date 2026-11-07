@@ -6,6 +6,8 @@ export const K = TH / TW;              // vertical squash of the ground plane
 export const PS = 1.2;                 // furniture is drawn a little larger than life so rooms feel furnished
 
 // who you can be: the four rendered characters, in office terms
+// seated pose per chair direction (the direction is the sprite row: 0 faces south, 4 north, 6 east, 2 west): the figure's nudge from the chair centre, so the hips land on the seat
+export const SEAT_POSE = { 0: { dx: 0, dy: -8 }, 4: { dx: 0, dy: -8 }, 6: { dx: 15, dy: -6 }, 2: { dx: -15, dy: -6 } };
 export const CHAR = 0.8; // characters are drawn at this fraction of the sprite size
 export const AVATARS = {
   boxer: { name: 'You', icon: '🧑', blurb: 'A colleague on a quiet day in building 305.', speed: 4.4 },
