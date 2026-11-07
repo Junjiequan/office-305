@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Sprite preview</title>
+<style>body{margin:0;background:#3a3636;color:#ddd;font:12px monospace}.c{display:inline-block;margin:2px;text-align:center}canvas{background:#4a4540}</style>
+<div id="o"></div>
+<script type="module">
+const q = new URLSearchParams(location.search), set = q.get('set') || 'monsters', anim = q.get('anim') || 'idle', frame = +(q.get('frame') || 0), dir = +(q.get('dir') || 0), zoom = +(q.get('zoom') || 1);
+const only = q.get('only');
+const man = await (await fetch('../assets/sprites/manifest_' + set + '.json')).json();
+const o = document.getElementById('o');
+for (const [file, m] of Object.entries(man)) {
+  const isHero = set === 'heroes', want = (set === 'props' || (set === 'office' && !file.includes('npc_'))) ? true : file.includes('_' + anim + '.png');
+  if (!want || (only && !file.includes(only))) continue;
+  const img = new Image(); img.src = '../assets/' + file + '?' + Date.now(); try { await img.decode(); } catch (e) { o.append('FAIL ' + file + ' ' + e + ' '); continue; }
+  const c = document.createElement('canvas'); c.width = c.height = m.frame * zoom; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+  const f = Math.min(frame, m.cols - 1), r = Math.min(dir, m.rows - 1); x.drawImage(img, f * m.frame, r * m.frame, m.frame, m.frame, 0, 0, c.width, c.height);
+  const d = document.createElement('div'); d.className = 'c'; d.appendChild(c); d.appendChild(document.createElement('br')); d.append(file.replace('sprites/', '').replace('.png', '')); o.appendChild(d);
+}
+</script>

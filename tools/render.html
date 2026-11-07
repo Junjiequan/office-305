@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Sprite renderer</title>
+<style>body{margin:0;background:#1d1d24;color:#ccd;font:13px/1.4 monospace;padding:8px}canvas{background:#2a2a33;margin:4px;image-rendering:auto}#log{white-space:pre-wrap}</style>
+<div id="log"></div><div id="out"></div>
+<script type="importmap">{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
+<script type="module">
+const log = m => { document.getElementById('log').textContent += m + '\n'; };
+window.addEventListener('error', e => log('ERROR ' + e.message));
+window.addEventListener('unhandledrejection', e => log('REJECTED ' + (e.reason && e.reason.stack || e.reason)));
+const job = new URLSearchParams(location.search).get('job') || 'heroes';
+const only = new URLSearchParams(location.search).get('only');
+try { const mod = await import('./sprites.js'); await mod.run(job, only, log); window.__done = true; log('done'); } catch (e) { log('FAILED ' + (e.stack || e)); }
+</script>
