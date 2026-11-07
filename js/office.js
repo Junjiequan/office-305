@@ -71,10 +71,12 @@ export function buildFloor(floor) {
       const segs = Math.max(1, Math.min(4, Math.floor((r.w - 2) / 2))), tx = left + Math.floor((r.w - segs * 2) / 2), row = midRow(r);
       for (let s = 0; s < segs; s++) { put('table', tx + s * 2, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + s * 2 + dx + 0.5, row - 0.35, 0, true); chair(tx + s * 2 + dx + 0.5, row + 1.35, 4, true); } }
       if (r.w >= 5) put('whiteboard', left + 1, far, 2, 1, { solid: false }); put('tv_w', right - 1, midRow(r), 1, 2, { solid: false }); if (r.w >= 6) put('plant', right - 1, far, 1, 1); if (r.w > 5) put('cabinet', left, near, 1, 1);
-    } else if (r.kind === 'kitchen') { // appliances along the right of the far wall; tables, sofas and plants on the left; the door is in the middle and the stairs sit left of it
-      const ft = far; put('fridge', right - 1, ft, 1, 1); put('coffee', right - 3, ft, 2, 1, { label: 'coffee' }); put('counter', right - 5, ft, 2, 1); put('counter', right - 7, ft, 2, 1); put('cooler', right - 8, ft, 1, 1); put('plant_big', right - 1, near, 1, 1);
+    } else if (r.kind === 'kitchen') { // a wall splits the room: dining on the left, the kitchen on the right with the sink and coffee machine against the right wall and the fridge against the partition
+      const px = left + 9, ft = far; for (let yy = r.y + 3; yy < r.y + r.h; yy++) cells[I(px, yy)] = 0;
+      put('coffee_w', right - 1, r.y + 1, 1, 2, { label: 'coffee' }); put('counter_w', right - 1, r.y + 3, 1, 2); put('counter_w', right - 1, r.y + 5, 1, 2);
+      put('fridge', px + 1, r.y + 4, 1, 1); put('cooler', px + 1, r.y + 6, 1, 1); put('plant_big', px + 1, r.y + 1, 1, 1);
       const row = midRow(r); for (const tx of [left + 2, left + 5]) { put('table', tx, row, 2, 1, { table: true }); for (const dx of [0.5, 1.5]) { chair(tx + dx + 0.5, row - 0.35, 0, true); chair(tx + dx + 0.5, row + 1.35, 4, true); } }
-      put('sofa', left + 1, ft, 2, 1); put('sofa_grey', left + 4, ft, 2, 1); put('plant', left + 6, ft, 1, 1);
+      put('sofa', left + 1, ft, 2, 1); put('sofa_grey', left + 4, ft, 2, 1); put('plant', left + 7, ft, 1, 1);
     } else if (r.kind === 'lounge') {
       put('sofa', left + 1, far, 2, 1); put('sofa_grey', left + 4 < right - 2 ? left + 4 : left + 1, far + (r.south ? -2 : 2), 2, 1); put('plant_big', right - 1, far, 1, 1);
       if (r.n >= 4 && r.w >= 7) for (const y of [r.y + 1, r.y + 3]) if (podFree(right - 4, y)) { pod(right - 4, y); break; }
@@ -95,7 +97,7 @@ export function buildFloor(floor) {
     npcs.push({ id: 'sofie', name: 'Sofie', role: 'Reception', ...at('lobby', 3.5, 2.7), dir: 0, lines: ['Welcome to building 305!', 'Meeting rooms 206, 208 and 222 are upstairs. There are stairs at both ends, and one in each kitchen.', 'Visitors sign in with me. Colleagues just wave.'] });
     npcs.push({ id: 'anna', name: 'Anna', role: 'Admin', ...at('106', 1.5, 2.5), dir: 0, lines: ['Hi! If the printer is jammed, it is always the one in 108.', 'Need a desk for a week? Ask me. Need one for a month? Ask me nicely.', 'The kitchen has the good coffee machine. Do not tell the other floor.'] });
     npcs.push({ id: 'erik', name: 'Erik', role: 'DST', ...at('105', 11.5, 6.5), dir: 0, lines: ['Shh... the build is running.', 'It passes locally. That is all I am going to say.', 'The whiteboards are free. The markers are somewhere. Mostly.'] });
-    npcs.push({ id: 'mads', name: 'Mads', role: 'Kitchen', x: kit.x + kit.w - 6.5, y: kit.y + (kit.south ? kit.h - 3 : 3), dir: 0, lines: ['Fresh coffee. Cup number four, but who is counting?', 'The fridge is a shared ecosystem. Label your lunch.', 'The first floor has a twin of this kitchen. It is quieter.'] });
+    npcs.push({ id: 'mads', name: 'Mads', role: 'Kitchen', x: kit.x + 11.5, y: kit.y + (kit.south ? kit.h - 3 : 3), dir: 0, lines: ['Fresh coffee. Cup number four, but who is counting?', 'The fridge is a shared ecosystem. Label your lunch.', 'The first floor has a twin of this kitchen. It is quieter.'] });
     npcs.push({ id: 'freja', name: 'Freja', role: 'Outside', x: ox + 24.5, y: oy - 3, dir: 0, lines: ['Taking five minutes of sunshine.', 'You can walk all around the building, the yard goes on both sides.', 'The cars are decorative. Do not try to start them.'] });
   } else {
     npcs.push({ id: 'freja', name: 'Freja', role: 'Hot desks', ...at('HD', 3.5, 4.5), dir: 0, lines: ['Hot desk today, a different one tomorrow. Like a nomad with a laptop.', 'I can only focus in the student room when it is silent.'] });
