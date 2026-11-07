@@ -84,6 +84,8 @@ export function buildFloor(floor) {
     else if (r.kind === 'lobby') { put('reception', left + 1, r.y + 1, 3, 1); put('sofa', left + 1, r.y + 4, 2, 1); put('plant_big', left, near, 1, 1); put('lamp', right - 1, r.y, 1, 1); put('plant_big', right - 1, near, 1, 1); }
   };
   for (const r of rooms) layout(r);
+  // a colleague can sit at a side chair of a pod (the seat is taken, so the player cannot sit there)
+  const seated = (roomId, i, fallback) => { const r = rooms.find(r => r.id === roomId), cs = r ? props.filter(p => p.chair && (p.dir === 6 || p.dir === 2) && p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h) : [], c = cs[i]; if (!c) return fallback; c.taken = true; return { x: c.x, y: c.y, seat: { dir: c.dir } }; };
   for (let x = ox + 10, i = 0; x < ox + BW - 10; x += 9, i++) { const t = ['plant', 'bench', 'cooler', 'plant_big', 'bench'][i % 5], w = t === 'bench' ? 2 : 1; if (free(x, oy + R.c0, w, 1) && !rooms.some(r => !r.south && x + w > r.door - 1 && x < r.door + 3)) put(t, x, oy + R.c0, w, 1); }
   for (let x = ox + 12; x < ox + BW - 6; x += 12) light(x, oy + 10.5, 320, 0xfff6ea);
   for (const hx of [ox + 3, ox + 78]) { light(hx, oy + 10.5, 380, 0xfff6ea); light(hx, oy + 4, 300, 0xfff6ea); light(hx, oy + 17, 300, 0xfff6ea); }
@@ -95,15 +97,15 @@ export function buildFloor(floor) {
   const at = (id, dx, dy) => { const r = rooms.find(r => r.id === id); return { x: r.x + dx, y: r.y + dy }; };
   if (floor === 0) {
     npcs.push({ id: 'sofie', name: 'Sofie', role: 'Reception', ...at('lobby', 3.5, 2.7), dir: 0, lines: ['Welcome to building 305!', 'Meeting rooms 206, 208 and 222 are upstairs. There are stairs at both ends, and one in each kitchen.', 'Visitors sign in with me. Colleagues just wave.'] });
-    npcs.push({ id: 'anna', name: 'Anna', role: 'Admin', ...at('106', 1.5, 2.5), dir: 0, lines: ['Hi! If the printer is jammed, it is always the one in 108.', 'Need a desk for a week? Ask me. Need one for a month? Ask me nicely.', 'The kitchen has the good coffee machine. Do not tell the other floor.'] });
-    npcs.push({ id: 'erik', name: 'Erik', role: 'DST', ...at('105', 11.5, 6.5), dir: 0, lines: ['Shh... the build is running.', 'It passes locally. That is all I am going to say.', 'The whiteboards are free. The markers are somewhere. Mostly.'] });
+    npcs.push({ id: 'anna', name: 'Anna', role: 'Admin', ...seated('106', 1, at('106', 1.5, 6.5)), dir: 0, lines: ['Hi! If the printer is jammed, it is always the one in 108.', 'Need a desk for a week? Ask me. Need one for a month? Ask me nicely.', 'The kitchen has the good coffee machine. Do not tell the other floor.'] });
+    npcs.push({ id: 'erik', name: 'Erik', role: 'DST', ...seated('105', 5, at('105', 11.5, 6.5)), dir: 0, lines: ['Shh... the build is running.', 'It passes locally. That is all I am going to say.', 'The whiteboards are free. The markers are somewhere. Mostly.'] });
     npcs.push({ id: 'mads', name: 'Mads', role: 'Kitchen', x: kit.x + 11.5, y: kit.y + (kit.south ? kit.h - 3 : 3), dir: 0, lines: ['Fresh coffee. Cup number four, but who is counting?', 'The fridge is a shared ecosystem. Label your lunch.', 'The first floor has a twin of this kitchen. It is quieter.'] });
     npcs.push({ id: 'freja', name: 'Freja', role: 'Outside', x: ox + 24.5, y: oy - 3, dir: 0, lines: ['Taking five minutes of sunshine.', 'You can walk all around the building, the yard goes on both sides.', 'The cars are decorative. Do not try to start them.'] });
   } else {
-    npcs.push({ id: 'freja', name: 'Freja', role: 'Hot desks', ...at('HD', 3.5, 4.5), dir: 0, lines: ['Hot desk today, a different one tomorrow. Like a nomad with a laptop.', 'I can only focus in the student room when it is silent.'] });
+    npcs.push({ id: 'freja', name: 'Freja', role: 'Hot desks', ...seated('HD', 0, at('HD', 3.5, 4.5)), dir: 0, lines: ['Hot desk today, a different one tomorrow. Like a nomad with a laptop.', 'I can only focus in the student room when it is silent.'] });
     npcs.push({ id: 'sofie', name: 'Sofie', role: 'Meetings', ...at('222', 2.5, 1.5), dir: 0, lines: ['222 has the green curtains. Best room in the building.', '208 is warm and orange; 206 is the small pink one for six people.', 'Book early. Everyone wants Friday 14:00.'] });
-    npcs.push({ id: 'anna', name: 'Anna', role: 'DRAM', ...at('205', 9.5, 6.5), dir: 0, lines: ['This is DRAM. We have the window seats.', 'Coffee runs on this floor are at 10 and at 14.'] });
-    npcs.push({ id: 'mads', name: 'Mads', role: 'Office 221', ...at('221', 1.5, 6.5), dir: 0, lines: ['Sit at any desk: press E next to a chair.', 'One day there will be something to do at the desks. For now: nice view.'] });
+    npcs.push({ id: 'anna', name: 'Anna', role: 'DRAM', ...seated('205', 6, at('205', 9.5, 6.5)), dir: 0, lines: ['This is DRAM. We have the window seats.', 'Coffee runs on this floor are at 10 and at 14.'] });
+    npcs.push({ id: 'mads', name: 'Mads', role: 'Office 221', ...seated('221', 9, at('221', 1.5, 6.5)), dir: 0, lines: ['Sit at any desk: press E next to a chair.', 'One day there will be something to do at the desks. For now: nice view.'] });
   }
   const spawn = floor === 0 ? { x: ox + 11.5, y: oy + BH + 3 } : { x: ox + 4, y: oy + 7 };
   return { floor, W, H, ox, oy, cells, zone, tint, wallTint, props, rooms, signs, npcs, stairs, lights, spawn };

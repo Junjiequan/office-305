@@ -83,11 +83,11 @@ export class GameScene extends Phaser.Scene {
   makeNpcs() {
     this.npcs = []; const L = this.L;
     for (const n of L.npcs) {
-      const prefix = 'npc_' + n.id, info = this.sheets[prefix + '_idle']; if (!info) continue; const x = (n.x + 0.5) * TW, y = (n.y + 0.5) * TH;
+      const prefix = 'npc_' + n.id, info = this.sheets[prefix + '_idle']; if (!info) continue; const seat = n.seat, x = seat ? (n.x + 0.5) * TW + (seat.dir === 6 ? 15 : -15) : (n.x + 0.5) * TW, y = seat ? (n.y + 0.5) * TH - 6 : (n.y + 0.5) * TH;
       const spr = this.add.sprite(x, y, prefix + '_idle', 0).setOrigin(0.5, info.originY).setScale(PPM * info.view / 128 * CHAR).setDepth(y), sh = this.add.image(x, y, 'shadow').setScale(0.7 * CHAR, 0.9 * CHAR).setDepth(1);
       const npc = Object.assign({}, n, { x, y, hx: 14, hy: 8, prefix, spr, sh, dir: n.dir || 0, anim: '', route: null, wait: 0, line: 0 });
       if (n.id === 'freja' && this.floor === 0) npc.route = [[x, y], [x + 14 * TW, y]];
-      this.setAnim(npc, 'idle'); npc.spr.anims.setProgress(Math.random()); this.npcs.push(npc);
+      if (seat) { npc.sitting = true; npc.dir = seat.dir; npc.seatY = (n.y + 0.5) * TH; spr.setOrigin(0.5, this.sheets[prefix + '_sit'].originY); this.setAnim(npc, 'sit'); } else this.setAnim(npc, 'idle'); npc.spr.anims.setProgress(Math.random()); this.npcs.push(npc);
     }
   }
   setAnim(e, a, force) { const key = `${e.prefix}_${a}_${e.dir}`; if (force || e.spr.anims.currentAnim?.key !== key) { e.spr.play(key); } e.anim = a; }
@@ -108,7 +108,7 @@ export class GameScene extends Phaser.Scene {
   // ---------------------------------------------------------------- interaction
   nearest() {
     const p = this.p, best = { kind: null, d: 1e9 }, test = (kind, obj, x, y, r) => { const d = Math.hypot(x - p.x, (y - p.y) / K); if (d < r && d < best.d) { best.kind = kind; best.obj = obj; best.d = d; } };
-    for (const n of this.npcs) test('npc', n, n.x, n.y, 92); for (const c of this.chairs) test('chair', c, c.cx, c.cy, 62); for (const s of this.L.stairs) test('stairs', s, s.cx, s.cy + 30, 105); for (const c of this.coffee) test('coffee', c, c.cx, c.cy + 20, 90); return best;
+    for (const n of this.npcs) test('npc', n, n.x, n.y, 92); for (const c of this.chairs) if (!c.taken) test('chair', c, c.cx, c.cy, 62); for (const s of this.L.stairs) test('stairs', s, s.cx, s.cy + 30, 105); for (const c of this.coffee) test('coffee', c, c.cx, c.cy + 20, 90); return best;
   }
   interact() {
     if (this.paused || this.transition) return; const p = this.p;
@@ -123,7 +123,7 @@ export class GameScene extends Phaser.Scene {
   showLine() { const t = this.talk, n = t.npc; UI.dialog(n.name, n.role, n.lines[t.i], t.i < n.lines.length - 1); }
   nextLine() { const t = this.talk; t.i++; if (t.i >= t.npc.lines.length) { t.npc.wait = 1.2; this.talk = null; UI.dialog(null); return; } sfx.chat(); this.showLine(); }
   sitDown(ch) {
-    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx + (ch.dir === 6 ? 15 : ch.dir === 2 ? -15 : 0); p.y = side ? ch.cy - 6 : ch.cy + 6 + (ch.dir === 0 ? 4 : 10); // sideways, the seated pelvis sits behind the sprite's root, so the figure is nudged forward onto the seat p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
+    const p = this.p; this.sit = { chair: ch, from: { x: p.x, y: p.y }, t0: this.time.now }; const side = ch.dir === 6 || ch.dir === 2; p.x = ch.cx + (ch.dir === 6 ? 15 : ch.dir === 2 ? -15 : 0); p.y = side ? ch.cy - 6 : ch.cy + (ch.dir === 4 ? -22 : 6); // the seated figure's feet stay in front of the chair, never below it // sideways, the seated pelvis sits behind the sprite's root, so the figure is nudged forward onto the seat p.vx = p.vy = 0; p.dir = ch.dir; sfx.sit();
     this.tweens.add({ targets: this.cameras.main, zoom: 1.6, duration: 500, ease: 'Cubic.easeInOut' }); this.zoom = 1.6;
     UI.toast('Seated', 'Soon: something to do at your desk', '#f0d6a8', 2600);
   }
@@ -142,7 +142,7 @@ export class GameScene extends Phaser.Scene {
   updatePlayer(dt) {
     const p = this.p, k = this.keys; let ix = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0), iy = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0); const il = Math.hypot(ix, iy); if (il) { ix /= il; iy /= il; }
     if (this.sit) { if (il) this.standUp(); else { p.moving = false; this.syncPlayer(); this.animPlayer(); return; } }
-    if (this.talk) { ix = iy = 0; const n = this.talk.npc; n.dir = dirOf(p.x - n.x, p.y - n.y); }
+    if (this.talk) { ix = iy = 0; const n = this.talk.npc; if (!n.sitting) n.dir = dirOf(p.x - n.x, p.y - n.y); }
     const sp = p.speed * PPM * (k.SHIFT.isDown ? 1.55 : 1); p.vx = lerp(p.vx, ix * sp, Math.min(1, dt * 12)); p.vy = lerp(p.vy, iy * sp * K, Math.min(1, dt * 12));
     this.moveEntity(p, p.vx * dt, p.vy * dt); p.moving = il > 0.1 && (Math.abs(p.vx) + Math.abs(p.vy)) > 8;
     for (const n of this.npcs) { const dx = p.x - n.x, dy = (p.y - n.y) / K, d = Math.hypot(dx, dy); if (d < 34 && d > 0.1) { p.x += dx / d * (34 - d) * 0.6; p.y += dy / d * (34 - d) * 0.6 * K; } }
@@ -155,6 +155,7 @@ export class GameScene extends Phaser.Scene {
   updateNpcs(dt) {
     const p = this.p;
     for (const n of this.npcs) {
+      if (n.sitting) { n.spr.setPosition(n.x, n.y + 8).setDepth(n.seatY + 14); n.sh.setPosition(n.x, n.y).setDepth(n.seatY + 3); continue; }
       const dx = p.x - n.x, dy = (p.y - n.y) / K, d = Math.hypot(dx, dy);
       if (n.route && n.wait <= 0) { const t = n.route[n.ri || 0], tx = t[0] - n.x, ty = (t[1] - n.y) / K, td = Math.hypot(tx, ty); if (td < 8) { n.ri = ((n.ri || 0) + 1) % n.route.length; n.wait = 3 + Math.random() * 3; } else { n.dir = dirOf(tx, ty * K); this.moveEntity(n, tx / td * 1.4 * PPM * dt, ty / td * 1.4 * PPM * dt * K); if (n.anim !== 'move') this.setAnim(n, 'move', true); else this.setAnim(n, 'move'); } }
       else { n.wait -= dt; if (n.anim !== 'idle' || n.spr.anims.currentAnim.key !== `${n.prefix}_idle_${n.dir}`) { if (d < 170 && !n.route) n.dir = dirOf(dx, dy * K); this.setAnim(n, 'idle', n.anim !== 'idle'); } else if (d < 170 && !n.route) { const nd = dirOf(dx, dy * K); if (nd !== n.dir) { n.dir = nd; this.setAnim(n, 'idle', true); } } }

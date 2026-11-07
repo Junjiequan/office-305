@@ -247,7 +247,7 @@ const OFFICE_PROPS = {
   trash: [trashBuild, 1.0, 0.3], bench: [benchBuild, 2.0, 0.5], bikes: [bikeRackBuild, 2.4, 0.3],
 };
 // colleagues: the character kit in everyday clothes
-const person = (tint, hairKey, hairCol, extra) => ({ outfit: 'peasant', tint, stance: null, clips: ['Idle_Loop', 'Walk_Loop'], map: { idle: 'Idle_Loop', move: 'Walk_Loop' }, dress(c) { c.hair(c.kit.hair[hairKey], hairCol); if (extra) extra(c); } });
+const person = (tint, hairKey, hairCol, extra) => ({ outfit: 'peasant', tint, stance: null, clips: ['Idle_Loop', 'Walk_Loop', 'Sitting_Idle_Loop'], map: { idle: 'Idle_Loop', move: 'Walk_Loop', sit: 'Sitting_Idle_Loop' }, dress(c) { c.hair(c.kit.hair[hairKey], hairCol); if (extra) extra(c); } });
 const glasses = c => { for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.005, 6, 16), c.mat(0x15161a, 0.4)); c.onHead(r, s * 0.045, -0.005, 0.1); } const b = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.005, 0.005), c.mat(0x15161a, 0.4)); c.onHead(b, 0, -0.005, 0.1); };
 const lanyard = c => { const l = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.01), c.mat(0xd8483a, 0.6)); l.position.set(0, c.yS3 - 0.22, c.cz + 0.15); c.put(c.b.spine_03, l); const card = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.012), c.mat(0xf4f2ec, 0.5)); card.position.set(0, c.yS3 - 0.5, c.cz + 0.15); c.put(c.b.spine_03, card); };
 const NPCS = { anna: person(0x4a7ac8, 'long', 0x6a3a22, lanyard), erik: person(0x6a8a5a, 'buzz', 0x2a2018, glasses), sofie: person(0xc8745a, 'parted', 0x1a1210, lanyard), mads: person(0x8a8a96, 'beard', 0x8a7a68, glasses), freja: person(0xa86ad0, 'long', 0xe0b070, lanyard), you: { ...person(0x2e5f9e, 'parted', 0x3a2a1c, lanyard), clips: ['Idle_Loop', 'Walk_Loop', 'Sitting_Idle_Loop', 'Sitting_Enter'], map: { idle: 'Idle_Loop', move: 'Walk_Loop', sit: 'Sitting_Idle_Loop', sitdown: 'Sitting_Enter' } } };
@@ -255,7 +255,7 @@ export async function runOffice(only, kit, log) {
   for (const [name, [make, view, center]] of Object.entries(OFFICE_PROPS)) { if (only && only !== name) continue; const o = make(); scene.add(o); setView(view, center); await sheet(`sprites/prop_${name}.png`, 1, 1, () => {}, log); scene.remove(o); await sleep(15); }
   for (const [name, cfg] of Object.entries(NPCS)) {
     if (only && only !== name) continue; cfg.scale = 1; const m = kitFigure(kit, cfg); scene.add(m.root); setView(2.3, 1.0);
-    for (const [label, n, loop] of [['idle', 6, true], ['move', 8, true], ...(name === 'you' ? [['sit', 6, true], ['sitdown', 8, false]] : [])]) { const sit = label.startsWith('sit'); if (sit) { setPitch(8); setView(2.3, 1.0); } await sheet(`sprites/npc_${name}_${label}.png`, 8, n, (r, k) => { m.root.rotation.y = DIRS[r] * Math.PI / 180; m.set(label, loop ? k / n : k / (n - 1), loop); }, log); if (sit) { setPitch(42); setView(2.3, 1.0); } await sleep(15); }
+    for (const [label, n, loop] of [['idle', 6, true], ['move', 8, true], ...(name === 'you' ? [['sit', 6, true], ['sitdown', 8, false]] : [['sit', 6, true]])]) { const sit = label.startsWith('sit'); if (sit) { setPitch(8); setView(2.3, 1.0); } await sheet(`sprites/npc_${name}_${label}.png`, 8, n, (r, k) => { m.root.rotation.y = DIRS[r] * Math.PI / 180; m.set(label, loop ? k / n : k / (n - 1), loop); }, log); if (sit) { setPitch(42); setView(2.3, 1.0); } await sleep(15); }
     scene.remove(m.root);
   }
 }
